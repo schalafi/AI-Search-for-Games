@@ -247,7 +247,6 @@ class PuzzleBoard(SGroup):
         }
 
         sounds =["whoosh.wav",'whoosh2.wav','whoosh3.wav','whoosh5.wav']
-        # whoosh4.wav
         sounds_dir = "sounds"
 
         n_moves = 0 
@@ -367,7 +366,7 @@ class TestBoard(Scene):
         self.solve(matrix = matrix,
             method =  self.search_method)
     def solve(self,matrix, method):
-        #TODO merge EPuzzle and Puzzle as one class.
+
         #Puzzle logic to use with Search
         puzzle_ = Puzzle(matrix)
         #Puzzle logic for the animation
@@ -375,6 +374,7 @@ class TestBoard(Scene):
         t0 = time.time()
         S = Search(initial = puzzle_)
         path = S.search(method = method)
+        stats  = S.stats 
         print("Number of actions in solution: ", len(path))
         if len(path)>1000:
             path = path[:10]
@@ -398,15 +398,20 @@ class TestBoard(Scene):
         self.wait(1)
 
         board.run_solution(solution = path,scene = self)
-        nodes_expanded = 0#ai._strategy.num_expanded_nodes
-        nodes_text = Text(
-        r"""
-        Number of expanded nodes: """ +  str(nodes_expanded ))
+        nodes_expanded = stats.get('nodes_expanded',0)
+        max_search_depth = stats.get('max_search_depth',0)
+        run_time =  stats.get('time',0)
+
+        stats_text =VGroup(
+            Text(r"""Expanded nodes: """ +  str(nodes_expanded )),
+            Text(r"Max search depth: " +  str(max_search_depth )),
+            Text(r"Time used: " +  str(round(run_time,3)) + " seconds")
+        ).arrange(DOWN)
         
-        nodes_text.next_to(board.n_moves_text,DOWN)
+        stats_text.next_to(board.n_moves_text,DOWN)
 
         self.play(
-            Write(nodes_text)
+            Write(stats_text)
         )
         self.wait(3)
 
@@ -461,6 +466,28 @@ class TestArrowTip(Scene):
         self.add(arr)
         self.wait(2)
 
+#Game matrices
+MATRICES = [ [
+            [1,0,2],
+            [3,4,5],
+            [6,7,8]]]
+MATRICES.append([[3,1,2],
+                [0,4,5],
+                [6,7,8]])
+MATRICES.append([[4,1,2],
+                    [3,8,5],
+                    [6,7,0]])
+MATRICES.append([[2,1,4],
+            [6,8,5],
+            [3,7,0]])
+
+MATRICES.append([[6,1,4],
+            [2,5,8],
+            [3,7,0]])
+
+MATRICES.append([[6,4,7],
+            [5,0,8],
+            [3,1,2]])
 
 
 class TestBoard2(TestBoard):
@@ -482,6 +509,8 @@ class TestBoard2(TestBoard):
             [3,4,5],
             [6,7,8]]
     }
+
+
 class TestBoard3(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -498,6 +527,8 @@ class TestBoard4(TestBoard):
                     [6,7,0]]
     }
 
+
+
 class TestBoard5(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -505,6 +536,7 @@ class TestBoard5(TestBoard):
             [6,8,5],
             [3,7,0]]
     }
+
 
 
 class TestBoard6(TestBoard):
@@ -515,6 +547,7 @@ class TestBoard6(TestBoard):
             [3,7,0]]
     }
 
+
 class TestBoard7(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -524,7 +557,6 @@ class TestBoard7(TestBoard):
     }
 
 
-
 class TestBFS(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -532,4 +564,40 @@ class TestBFS(TestBoard):
             [5,0,8],
             [3,1,2]],
         "search_method":'bfs'
+    }
+
+class TestAStar(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":[[6,4,7],
+            [5,0,8],
+            [3,1,2]],
+        "search_method":'a_star'
+    }
+
+class TestAStar(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[0],
+        "search_method":'a_star'
+    }
+
+class TestAStar2(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[1],
+        "search_method":'a_star'
+    }
+
+class TestAStar3(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[2],
+        "search_method":'a_star'
+    }
+class TestAStar4(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[3],
+        "search_method":'a_star'
     }

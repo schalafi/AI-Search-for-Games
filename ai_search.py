@@ -3,7 +3,7 @@ import time
 import queue as Q
 from typing import Hashable 
 from puzzle import Puzzle
-
+import heapq
 
 def get_platform():
     platforms = {
@@ -22,54 +22,12 @@ IS_LINUX= get_platform().startswith('linux')
 if IS_LINUX:
     import resource
 
-
-"""
-import heapq
-
-class Frontier:
-    def __init__(self):
-        self.items = {}
-        self.order = []
-        
-    def add(self, id, element, priority):
-        heapq.heappush(self.order, (priority, id))
-        self.items[id] = element
-        
-    def update(self, id, element, priority):
-        self.items[id] = element
-        for i, (p, item_id) in enumerate(self.order):
-            if item_id == id:
-                self.order[i] = (priority, id)
-                heapq.heapify(self.order)
-        
-    def __contains__(self, id):
-        return id in self.items
-        
-    def __getitem__(self, id):
-        return self.items[id]
-    
-    def __setitem__(self, id, element, priority):
-        self.items[id] = element
-        heapq.heappush(self.order, (priority, id))
-        
-    def pop(self):
-        priority, id = heapq.heappop(self.order)
-        return self.items.pop(id)
-"""
-
 #Add and retrieve 
 class Frontier:
     def __init__(self):
         self.items = {}
         self.order = []
-        
-    """def add(self, id, element):
-        self.items[id] = element
-        self.order.append(id)"""
-        
-    """def update(self, id, element):
-        self.items[id] = element"""
-        
+   
     def __contains__(self, id):
         return id in self.items
         
@@ -86,7 +44,7 @@ class Frontier:
             index of the element to retrieve
             By default it returns the last element .pop()
             making it a Stack
-            Pass index =0 to implement a Queue
+            Pass index =0 to implement a Queue or could use another index
             it retrieves the first element in the list (the oldest)
 
         Return the SearchNode
@@ -95,54 +53,30 @@ class Frontier:
             id = self.order.pop()
         else:
             id = self.order.pop(index)
-        #delete element from frontier  
+        #Get and delete element from frontier  
         return self.items.pop(id)
     def __len__(self):
         return len(self.order)
 
-class FailingFrontier:
-
-    def __init__(self):
-        #Mantain pairs (string state): Object
-        self.search_table = {}
-
-        #Only contains (string state) or (string state, f)
-        #Expanded set
-        self.structure = None
-
-    def is_in(self, element:str)->bool:
-        """
-        element:
-            Object
-        Check if the given element
-        is in frontier
-        """
-        return element in self.search_table
+# Return objects from min to max priority
+class PriorityFrontier(Frontier):    
+        
+    def update(self, id, element ):
+        self.items[id] = element
+        priority = element.get_f()
+        for i, (p, item_id) in enumerate(self.order):
+            if item_id == id:
+                self.order[i] = (priority, id)
+                heapq.heapify(self.order)
     
-    def get(self,id:Hashable)-> "SearchNode":
-        """
-        id: a hashable representation of the 
-            state of the game
-        Return the element if in frontier and remove it 
-            None otherwise
-        TODO override pop method
-        """
-        #get the element 
-        element = self.search_table.get(id,None)
-        return element
-    
-    def update(self,id:Hashable, object:"SearchNode"):
-        """
-        id: a hashable representation of the 
-            state of the game
-        TODO override [] assigment
-        """
-
-        try: 
-            self.search_table[id]= object
-        except KeyError as e:
-            print(e)
-            print(f"Frontier not updated, id {id} not found.")
+    def __setitem__(self, id, element):
+        self.items[id] = element
+        #priority is computed with get_f method (distance + heuristic)
+        heapq.heappush(self.order, (element.get_f(), id))
+        
+    def pop(self):
+        priority, id = heapq.heappop(self.order)
+        return self.items.pop(id)
     
 def get_info(node,tree,n_nodes_expanded,height):
     """
@@ -159,7 +93,6 @@ def get_info(node,tree,n_nodes_expanded,height):
     print("Search depth:",node.depth)
     print("Max search depth:", height)
     return path 
-
 
 class SearchNode:
     def __init__(self,state:object):
@@ -220,7 +153,6 @@ class SearchNode:
         
         return path
 
-
     def get_f(self)->float:
         """
         Return the f-score
@@ -245,6 +177,7 @@ class SearchNode:
             sn = SearchNode(n)
             #add the cost to reach this new state
             #TODO adapt this cost depending of game
+            #in this case we have cost of one movement if 1 
             sn.g = self.g + 1
             sn.parent = self 
             sn.depth = self.depth + 1
@@ -295,9 +228,8 @@ class SearchNode:
         A SearchNode a is less than another b
         if the f-score  of a is less than the f-score
         of b
-
         """
-        return self.get_f()<other.get_f()
+        return self.get_f() < other.get_f()
 
 
 class Search:
@@ -327,9 +259,7 @@ class Search:
         self.stats = {
             "nodes_expanded": self.n_nodes_expanded,
             "max_search_depth":  self.height,
-            'time':0
-
-        }
+            'time':0 }
        
     def compute_height(self)-> int:
         """
@@ -381,9 +311,7 @@ class Search:
             "search_depth":node.depth,
             "max_search_depth":  self.height,
             'time':time.time() -self.t0,
-            'ram_usage':None
-
-        }
+            'ram_usage':None}
        
     def dfs(self,
         goal_test: callable = Puzzle.is_goal, 
@@ -443,6 +371,7 @@ class Search:
             self.n_nodes_expanded+= 1
         
         return []
+
     def bfs(self,
         goal_test: callable = Puzzle.is_goal, 
         neighbors:callable =SearchNode.successors):
@@ -498,6 +427,80 @@ class Search:
             self.n_nodes_expanded+= 1
         return []
 
+    def a_star(self,
+        goal_test: callable = Puzzle.is_goal, 
+        neighbors:callable =SearchNode.successors):
+        """
+        goal_test: class method
+            The goal test for the game
+        neighbors: class method
+            The method in game to produce 
+            neighbors or successors 
+        """
+        print("Runnig A* ... \n")
+
+        height = 0 
+        #FIFO
+        #Queue 
+        frontier = PriorityFrontier() #id (string): SearchNode
+
+        #TODO define method to get the string_state (id)
+        node_id = self.root.state.string_state
+        frontier[node_id] = self.root  #id (string): SearchNode
+
+        #expanded/explored nodes
+        expanded = {}
+
+        #Frontier not empty
+        while len(frontier) != 0:
+            self.n_nodes_expanded+= 1
+            node = frontier.pop()
+            node_id = node.state.string_state
+
+            #add to expanded nodes
+            expanded[node_id] = True
+
+            #Check for goal
+            if goal_test(node.state):
+                #If is goal 
+                #return the path from start  to goal. 
+                path = get_info(node,self, self.n_nodes_expanded,height)
+                #set goal node
+                self.GOAL_NODE = node
+                return path
+
+            #Compute children (next states) from node
+            #node.children = next states
+            neighbors(node)
+
+            for n in node.children:
+                #compute height
+                height = max(height,n.depth)
+                n_id = n.state.string_state
+
+                #check if we have found a new best route 
+                #lower cost
+                if n_id in frontier:
+                    current_distance  = n.g
+                    #TODO generalize to get the cost from the graph or game
+                    #compute new distance 
+                    #with the cost of 1 step equal 1
+                    #node -->n costs 1 
+                    new_distance = node.g + 1
+                    
+                    if new_distance < current_distance:
+                        n.g = new_distance
+                        #set new parent
+                        n.parent  = node 
+                        #update the value of n in frontier
+                        frontier.update(n_id,n)
+                #n is not  in frontier
+                # add it
+                else:
+                    n.parent = node 
+                    #update the node in frontier
+                    frontier[n_id]= n
+        return []
 
     def search(self,method:str,**kwargs):
         """
@@ -507,12 +510,11 @@ class Search:
         result = None 
         self.t0 = time.time()
 
-        methods = {'dfs':self.dfs,'bfs':self.bfs}
+        methods = {'dfs':self.dfs,'bfs':self.bfs,'a_star':self.a_star}
 
         if method not in methods:
             raise Exception(f"Method: {method} not defined")
         method = methods[method]
-        #print("GAME CLASS", self.initial.__class__)
         result = method(
                 goal_test=self.game_class.is_goal,
                 neighbors = SearchNode.successors )
@@ -527,14 +529,14 @@ class Search:
         return result
 
             
-def run_test_case(matrix, zero, method):
+def run_test_case(matrix, method):
     """
         matrix matrix of the Puzzle
         zero (i,j) position of 0 in mattrix
         method is search method
     """
     t0 = time.time()
-    p = Puzzle(matrix,zero)
+    p = Puzzle(matrix)
     S = Search(initial = p)
     path = S.search(method = method)
     if path != None:
@@ -561,16 +563,36 @@ def run_test_case(matrix, zero, method):
     return path 
 
 
+class ObjectPriority:
 
+    def __init__(self,  name, priority):
+        self.name = name
+        self.priority = priority
+    def get_f(self):
+
+        return self.priority
+    def __str__(self) -> str:
+        return self.name + ',' +str(self.priority)
+
+def test_priority_frontier():
+    f  = PriorityFrontier()
+    #id, priority, element
+    f['aa']= ObjectPriority('first element',100)
+    f['bb']= ObjectPriority( 'second element',-1)
+    f['cc']= ObjectPriority( 'third element',-0.1)
+
+    print("priority frontier")
+    print(f)
+    while len(f) != 0:
+        print(f.pop())
 
 if __name__ == "__main__":
     m=[[1,2,5],
     [3,4,0],
     [6,7,8]]
     zero=(1,2)
+    run_test_case(matrix = m,  method = 'dfs')
 
-    run_test_case(matrix = m, zero= zero, method = 'dfs')
-
-
+    test_priority_frontier()
             
 
