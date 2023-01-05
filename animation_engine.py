@@ -373,7 +373,11 @@ class TestBoard(Scene):
         #puzzle = Puzzle(matrix)
         t0 = time.time()
         S = Search(initial = puzzle_)
+        if not puzzle_.is_solvable():
+            raise Exception("Game is not solvable: \n", + str(puzzle_) )
+
         path = S.search(method = method)
+
         stats  = S.stats 
         print("Number of actions in solution: ", len(path))
         if len(path)>1000:
@@ -489,6 +493,13 @@ MATRICES.append([[6,4,7],
             [5,0,8],
             [3,1,2]])
 
+MATRICES.append([[8,6,7],
+                 [2,5,4],
+                 [3,0,1]])
+
+
+
+
 
 class TestBoard2(TestBoard):
     CONFIG = {
@@ -566,14 +577,6 @@ class TestBFS(TestBoard):
         "search_method":'bfs'
     }
 
-class TestAStar(TestBoard):
-    CONFIG = {
-        "camera_class": ThreeDCamera,
-        "matrix":[[6,4,7],
-            [5,0,8],
-            [3,1,2]],
-        "search_method":'a_star'
-    }
 
 class TestAStar(TestBoard):
     CONFIG = {
@@ -599,5 +602,35 @@ class TestAStar4(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
         "matrix":MATRICES[3],
+        "search_method":'a_star'
+    }
+
+class TestAStar5(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[4],
+        "search_method":'a_star'
+    }
+
+class TestAStar6(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[5],
+        "search_method":'a_star'
+    }
+
+class TestAStarHardest(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[6],
+        "search_method":'a_star'
+    }
+
+class TestAStarHardest2(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":[[6,4,7],
+                  [8,5,0],
+                  [3,2,1]],
         "search_method":'a_star'
     }
