@@ -12,6 +12,13 @@ from ai_search import Search
 print(os.getcwd())
 
 
+ALGO_NAMES = {
+            'dfs':'Depth First Search (DFS)',
+            'bfs':'Breadth First Search (BFS)',
+            'a_star':r'A*'
+
+        }
+ALGO_STATS = {'algo':[],'expanded_nodes':[],'max_search_depth':[],'n_actions': [],'time':[] }
 
 class Tile(Group):
     CONFIG = {
@@ -121,7 +128,6 @@ class PuzzleBoard(SGroup):
         top_square.replace(cube[0])
         cube.replace_submobject(0, top_square)
         """
-
         # individiual squares
         self.squares = [cube.copy() for x in range(nc * nr)]
         
@@ -191,19 +197,32 @@ class PuzzleBoard(SGroup):
         """
         return self.N*i + j 
 
-    def run_solution(self, solution,scene):
+    def run_solution(self, solution,scene,algo_name= ''):
         """
         solution: list 
             [ [zero,action], [zero, action]]
         scene: Scene  
         """
         
+        algo_text = VGroup(
+            Text(algo_name, color = WHITE, stroke_width = 3,stroke_opacity = 1,font= 'Libertatus Duas').scale(1.7),
+            Text(algo_name, color = BLUE, stroke_width = 3,stroke_opacity = 1,font = 'Libertatus Duas').scale(1.725)
+            )
+        algo_text.to_edge(UP + LEFT)
+        
+        if len(algo_name) >= 10:
+            algo_text.shift(LEFT*6)
+        else:
+            algo_text.shift(LEFT*2)
+
         executing = VGroup(Text(r"Solving"), Tex(r'\dots')).arrange(RIGHT)
-        executing.to_edge(UP + LEFT)
-        executing.shift(LEFT*3)
+        #executing.to_edge(UP + LEFT)
+        #executing.shift(LEFT*3)
         executing[1].next_to(executing[0], RIGHT)
         executing[1].shift(DOWN*0.1)
+        executing.next_to(algo_text, DOWN)
 
+        scene.play(ShowCreation(algo_text))
         scene.play(Write(executing[0]))
         scene.add(executing[1])
 
@@ -238,7 +257,6 @@ class PuzzleBoard(SGroup):
             angle = 180*DEGREES,
             **arrow_tip_config)
     
-
         action_to_tex = {
             (1,0):up_arrow.scale(action_scale).shift(offset*RIGHT), #Tex(r'\uparrow',color = YELLOW).scale(action_scale).shift(offset*RIGHT),
             (-1,0):down_arrow.scale(action_scale).shift(offset*RIGHT), #Tex(r'\downarrow',color = YELLOW).scale(action_scale).shift(offset*RIGHT),
@@ -280,7 +298,6 @@ class PuzzleBoard(SGroup):
 
             #get non-zero tile 
             tile_loc =tuple(np.array(zero_loc) + np.array(action) )
-            #print("tile location:",tile_loc)
             
             ind_tile = self.get_index(*tile_loc) 
             tile = self.tiles[ind_tile]
@@ -401,10 +418,19 @@ class TestBoard(Scene):
             run_time = 1)
         self.wait(1)
 
-        board.run_solution(solution = path,scene = self)
+        board.run_solution(solution = path,scene = self, algo_name =ALGO_NAMES[self.search_method])
+
         nodes_expanded = stats.get('nodes_expanded',0)
         max_search_depth = stats.get('max_search_depth',0)
         run_time =  stats.get('time',0)
+        n_actions = stats.get('n_actions',0)
+
+        ALGO_STATS['algo'].append(ALGO_NAMES[self.search_method])
+        ALGO_STATS['expanded_nodes'].append(nodes_expanded)
+        ALGO_STATS['max_search_depth'].append(max_search_depth)
+        ALGO_STATS['n_actions'].append(n_actions)
+        ALGO_STATS['time'].append(run_time)
+        
 
         stats_text =VGroup(
             Text(r"""Expanded nodes: """ +  str(nodes_expanded )),
@@ -578,6 +604,56 @@ class TestBFS(TestBoard):
     }
 
 
+
+class TestBFS(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[0],
+        "search_method":'a_star'
+    }
+
+class TestBFS2(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[1],
+        "search_method":'a_star'
+    }
+
+class TestBFS3(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[2],
+        "search_method":'a_star'
+    }
+
+class TestBFS4(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[3],
+        "search_method":'a_star'
+    }
+class TestBFS5(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[4],
+        "search_method":'a_star'
+    }
+
+class TestBFS6(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[5],
+        "search_method":'a_star'
+    }
+
+class TestBFS7(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[6],
+        "search_method":'a_star'
+    }
+
+# A STAR
 class TestAStar(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -634,3 +710,29 @@ class TestAStarHardest2(TestBoard):
                   [3,2,1]],
         "search_method":'a_star'
     }
+
+
+
+class TestAlgosM0(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[0],
+        "search_method":''
+    }
+
+    def construct(self):
+        # Setup
+        digest_config(self, self.CONFIG)
+
+        matrix = self.matrix
+
+        self.camera.frame.save_state()
+
+        for method in ['dfs','bfs', 'a_star']:
+            self.search_method = method
+            self.solve(matrix = matrix,
+                method =  method)
+            self.camera.frame.restore()
+            self.clear()
+        
+        print("Algorithms Stats: ", ALGO_STATS)

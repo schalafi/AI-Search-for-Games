@@ -55,6 +55,7 @@ class Frontier:
             id = self.order.pop(index)
         #Get and delete element from frontier  
         return self.items.pop(id)
+
     def __len__(self):
         return len(self.order)
 
@@ -160,7 +161,7 @@ class SearchNode:
             (cost of moves from root to this node)
             + the heuristic from this node to goal.
         """
-        return self.g +self.state.h
+        return self.g + self.state.h
 
     def successors(self):
         """
@@ -259,7 +260,8 @@ class Search:
         self.stats = {
             "nodes_expanded": self.n_nodes_expanded,
             "max_search_depth":  self.height,
-            'time':0 }
+            'time':0,
+            'n_actions':0 }
        
     def compute_height(self)-> int:
         """
@@ -300,7 +302,7 @@ class Search:
             #mark the nodes in the solution
             state.solution = True 
             state = state.parent
-    def compute_stats(self, node:SearchNode):
+    def compute_stats(self, node:SearchNode,n_actions:  int):
         """
         node:
             Goal node
@@ -310,7 +312,8 @@ class Search:
             "nodes_expanded": self.n_nodes_expanded,
             "search_depth":node.depth,
             "max_search_depth":  self.height,
-            'time':time.time() -self.t0,
+            'time':time.time() - self.t0,
+            'n_actions':n_actions ,
             'ram_usage':None}
        
     def dfs(self,
@@ -522,7 +525,8 @@ class Search:
         if self.GOAL_NODE is None:
             print("No solution found")                
         else:
-            self.compute_stats(self.GOAL_NODE)
+            n_actions = len(result)
+            self.compute_stats(self.GOAL_NODE,n_actions)
             print("STATS:")
             print(self.stats)
 
