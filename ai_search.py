@@ -161,7 +161,7 @@ class SearchNode:
             (cost of moves from root to this node)
             + the heuristic from this node to goal.
         """
-        return self.g + self.state.h
+        return self.g + self.state.get_h()
 
     def successors(self):
         """

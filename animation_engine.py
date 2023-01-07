@@ -33,7 +33,13 @@ class Tile(Group):
             "opacity": 1,
             "gloss": 0.5,
             "square_resolution": (4, 4),
-        }
+        },
+        'label_config':{ 
+            "fill_color": WHITE,
+            "fill_opacity": 1,
+            "stroke_width": 2,
+            "stroke_color": BLACK,
+            "stroke_opacity": 1.0}
     }
 
     def __init__(self,number_label, **kwargs):
@@ -44,26 +50,17 @@ class Tile(Group):
         """
         super().__init__(**kwargs)
         self.number_label = number_label
-
-        
         
         self.prism =Prism(width= 1.0, height= 1.0, depth= 1.0,**self.prism_config) # Prism(dimensions= [1, 1, 1]) 
         self.add(self.prism)
         self.rotate(90 * DEGREES, OUT)
         self.set_color(self.color)
-        
-        config ={ 
-        "fill_color": WHITE,
-        "fill_opacity": 1,
-        "stroke_width": 2,
-        "stroke_color": BLACK,
-        "stroke_opacity": 1.0}
 
         if self.include_label:
             label_text = Tex(
                 str(self.number_label),                
                 font= 'Luckiest Guy') 
-            label_text.set_style(**config)
+            label_text.set_style(**self.label_config)
             label_text.shift(1.02 * OUT)
             label_text.set_height(self.prism.get_height() *0.5)#0.8
 
@@ -105,8 +102,14 @@ class PuzzleBoard(SGroup):
                         "opacity": 1,
                         "gloss": 0.5,
                         "square_resolution": (4, 4),
+                    },
+                'label_config':{ 
+                    "fill_color": WHITE,
+                    "fill_opacity": 1,
+                    "stroke_width": 2,
+                    "stroke_color": BLACK,
+                    "stroke_opacity": 1.0}
                     }
-            }
     }
 
     def __init__(self, state,**kwargs):
@@ -114,7 +117,9 @@ class PuzzleBoard(SGroup):
         state: Puzzle 
             initial state 
         """
+        digest_config(self, kwargs)
         super().__init__(**kwargs)
+        
         self.state = state 
         # NXN board 
         self.N = len(self.state.matrix)
@@ -363,7 +368,38 @@ class Complexity(Scene):
 
         self.wait(5)
 
+class TestBigBoard(Scene):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[65, 56, 48, 86, 73, 0, 61, 37, 28, 16], [25, 13, 52, 81, 40, 46, 15, 34, 94, 89], [22, 74, 97, 17, 24, 39, 96, 92, 30, 95], [8, 14, 1, 4, 67, 91, 69, 20, 45, 88], [63, 66, 19, 36, 62, 93, 70, 84, 21, 7], [2, 35, 41, 54, 58, 87, 72, 12, 50, 10], [9, 18, 75, 42, 44, 26, 68, 85, 57, 27], [38, 3, 76, 47, 99, 33, 59, 98, 55, 43], [78, 51, 32, 60, 23, 53, 64, 29, 82, 90], [80, 6, 11, 49, 71, 83, 31, 79, 77, 5]],
+    }
 
+    def construct(self):
+        # Setup
+        frame = self.camera.frame
+        matrix = self.matrix
+        digest_config(self, self.CONFIG)
+
+        #Puzzle logic to use with Search
+        puzzle_ = Puzzle(matrix,
+            generate_goal_matrix=True)
+        print("Heuristic value: ", puzzle_.heuristic())
+        
+        board =PuzzleBoard(puzzle_, label_config= { 
+                    "fill_color": WHITE,
+                    "fill_opacity": 1,
+                    "stroke_width": 0.0,
+                    "stroke_color": BLACK,
+                    "stroke_opacity": 1.0})
+        self.play(
+            ShowCreation(board,run_time = 2))
+        self.add(board)
+
+        self.wait(1)
+        self.play(
+            self.camera.frame.animate.rotate(angle = PI/5, axis= Y_AXIS+ OUT*0.1),
+            run_time = 1)
+        self.wait(5)
 
 class TestBoard(Scene):
     CONFIG = {
@@ -385,7 +421,8 @@ class TestBoard(Scene):
     def solve(self,matrix, method):
 
         #Puzzle logic to use with Search
-        puzzle_ = Puzzle(matrix)
+        puzzle_ = Puzzle(matrix,generate_goal_matrix=True)
+        print("Heuristic value: ", puzzle_.heuristic())
         #Puzzle logic for the animation
         #puzzle = Puzzle(matrix)
         t0 = time.time()
@@ -465,7 +502,7 @@ class TestGetNeighbors(Scene):
         
         matrix = self.matrix
     
-        puzzle_ = Puzzle(matrix)
+        puzzle_ = Puzzle(matrix, generate_goal_matrix=True)
         #puzzle = Puzzle(matrix)
         board =PuzzleBoard(puzzle_)
 
@@ -711,8 +748,6 @@ class TestAStarHardest2(TestBoard):
         "search_method":'a_star'
     }
 
-
-
 class TestAlgosM0(TestBoard):
     CONFIG = {
         "camera_class": ThreeDCamera,
@@ -736,3 +771,86 @@ class TestAlgosM0(TestBoard):
             self.clear()
         
         print("Algorithms Stats: ", ALGO_STATS)
+
+class TestAlgosM2(TestAlgosM0):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":MATRICES[2],
+        "search_method":''
+    }
+
+
+###OVERTIME
+class Puzzle10_0(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[77, 67, 41, 56, 61, 46, 66, 54, 99, 86],
+        [74, 5, 78, 79, 3, 37, 19, 32, 65, 59],
+        [14, 16, 30, 98, 57, 84, 95, 82, 70, 27],
+        [35, 92, 69, 24, 88, 33, 87, 75, 55, 21],
+        [52, 31, 49, 43, 80, 40, 58, 20, 29, 42],
+        [91, 2, 73, 71, 11, 51, 25, 72, 0, 15],
+        [22, 36, 68, 96, 60, 6, 28, 85, 12, 47],
+        [83, 10, 38, 50, 64, 97, 4, 63, 81, 1],
+        [26, 89, 45, 53, 90, 62, 94, 8, 34, 76],
+        [18, 17, 13, 44, 7, 39, 48, 93, 23, 9]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_1(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[34, 56, 41, 13, 84, 99, 0, 62, 80, 11], [51, 40, 77, 48, 28, 92, 59, 96, 30, 72], [82, 23, 89, 31, 3, 97, 8, 26, 66, 90], [37, 74, 9, 63, 12, 39, 27, 85, 73, 78], [91, 54, 36, 5, 45, 20, 57, 29, 69, 16], [6, 24, 22, 55, 15, 10, 95, 49, 52, 86], [46, 94, 58, 32, 81, 71, 53, 98, 65, 87], [35, 25, 75, 64, 19, 60, 14, 43, 83, 79], [68, 61, 1, 70, 18, 2, 42, 38, 7, 76], [44, 67, 17, 33, 4, 93, 47, 21, 88, 50]],
+        "search_method":'a_star'
+    }
+
+
+class Puzzle10_2(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[29, 93, 5, 49, 6, 82, 41, 65, 77, 80], [18, 69, 40, 91, 75, 3, 61, 42, 21, 27], [16, 47, 39, 31, 68, 8, 54, 24, 28, 57], [0, 97, 36, 78, 48, 11, 58, 66, 15, 23], [10, 74, 19, 71, 30, 96, 73, 2, 94, 89], [72, 79, 86, 44, 38, 84, 25, 33, 17, 85], [88, 45, 22, 7, 34, 43, 59, 63, 32, 60], [12, 64, 67, 9, 70, 55, 76, 13, 81, 98], [51, 53, 26, 90, 62, 83, 4, 1, 87, 14], [37, 35, 56, 52, 50, 46, 20, 95, 99, 92]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_3(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[16, 83, 17, 20, 52, 86, 79, 71, 24, 18], [13, 62, 99, 70, 39, 43, 40, 55, 98, 27], [82, 25, 65, 53, 50, 90, 33, 3, 88, 91], [5, 1, 10, 75, 11, 36, 60, 66, 94, 45], [7, 67, 35, 78, 4, 69, 72, 61, 0, 41], [58, 73, 48, 38, 56, 29, 57, 92, 30, 28], [12, 97, 81, 47, 19, 77, 63, 74, 46, 14], [37, 68, 26, 85, 31, 15, 95, 9, 89, 42], [8, 96, 21, 49, 64, 93, 23, 84, 6, 32], [2, 59, 34, 22, 76, 54, 51, 80, 87, 44]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_4(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[90, 24, 61, 33, 32, 12, 78, 0, 3, 16], [84, 75, 19, 51, 58, 76, 1, 54, 45, 53], [50, 39, 15, 14, 79, 74, 56, 91, 6, 65], [52, 70, 83, 38, 67, 68, 31, 21, 34, 59], [95, 22, 85, 63, 94, 42, 11, 93, 49, 10], [36, 82, 69, 77, 80, 57, 71, 41, 88, 89], [26, 23, 40, 98, 47, 9, 86, 13, 46, 7], [87, 66, 29, 48, 28, 72, 60, 17, 37, 73], [27, 96, 8, 5, 44, 81, 64, 30, 97, 35], [99, 2, 92, 4, 25, 55, 62, 20, 18, 43]],
+        "search_method":'a_star'
+    }
+
+
+class Puzzle10_5(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix":  [[65, 56, 48, 86, 73, 0, 61, 37, 28, 16], [25, 13, 52, 81, 40, 46, 15, 34, 94, 89], [22, 74, 97, 17, 24, 39, 96, 92, 30, 95], [8, 14, 1, 4, 67, 91, 69, 20, 45, 88], [63, 66, 19, 36, 62, 93, 70, 84, 21, 7], [2, 35, 41, 54, 58, 87, 72, 12, 50, 10], [9, 18, 75, 42, 44, 26, 68, 85, 57, 27], [38, 3, 76, 47, 99, 33, 59, 98, 55, 43], [78, 51, 32, 60, 23, 53, 64, 29, 82, 90], [80, 6, 11, 49, 71, 83, 31, 79, 77, 5]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_6(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix": [[21, 0, 8, 55, 77, 68, 82, 18, 63, 66], [5, 78, 79, 80, 34, 72, 71, 60, 89, 4], [11, 25, 28, 31, 52, 86, 48, 70, 41, 49], [23, 45, 62, 74, 15, 96, 98, 46, 94, 87], [67, 3, 27, 99, 56, 73, 69, 35, 36, 38], [75, 24, 76, 57, 16, 84, 40, 58, 91, 17], [97, 54, 14, 6, 20, 2, 93, 88, 29, 10], [26, 44, 92, 90, 7, 65, 39, 95, 42, 1], [19, 37, 43, 32, 50, 61, 64, 33, 22, 12], [51, 59, 85, 53, 13, 9, 83, 81, 47, 30]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_7(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix": [[43, 44, 26, 93, 46, 79, 66, 24, 52, 1], [28, 95, 48, 50, 99, 85, 23, 25, 3, 45], [55, 8, 80, 76, 37, 67, 5, 60, 70, 72], [22, 14, 84, 53, 87, 68, 49, 41, 38, 64], [96, 9, 94, 15, 90, 54, 31, 59, 81, 21], [0, 10, 63, 12, 4, 56, 11, 71, 7, 18], [19, 33, 75, 30, 98, 89, 62, 57, 82, 58], [40, 69, 92, 97, 20, 6, 83, 61, 78, 35], [73, 13, 29, 36, 34, 51, 27, 77, 32, 2], [88, 65, 86, 17, 74, 39, 42, 91, 16, 47]],
+        "search_method":'a_star'
+    }
+
+class Puzzle10_8(TestBoard):
+    CONFIG = {
+        "camera_class": ThreeDCamera,
+        "matrix": [[87, 16, 86, 45, 27, 81, 43, 59, 19, 35], [21, 4, 76, 80, 61, 13, 6, 9, 39, 14], [40, 49, 46, 47, 92, 60, 10, 69, 41, 75], [73, 88, 85, 24, 67, 51, 33, 52, 68, 50], [3, 38, 77, 64, 93, 55, 63, 62, 1, 29], [94, 97, 28, 44, 32, 26, 22, 54, 91, 84], [56, 74, 98, 17, 79, 37, 99, 53, 7, 65], [2, 66, 83, 90, 23, 12, 30, 20, 18, 31], [5, 11, 72, 70, 82, 78, 42, 34, 58, 15], [8, 95, 57, 36, 25, 96, 48, 71, 0, 89]],
+        "search_method":'a_star'
+    }

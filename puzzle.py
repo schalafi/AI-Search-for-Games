@@ -1,3 +1,5 @@
+import random 
+
 STRING_TO_ACTION ={'U':(-1,0),'D':(1,0),'L':(0,-1),'R':(0,1)}
 ACTION_TO_STRING = {v:k for k,v  in STRING_TO_ACTION.items() }
 
@@ -13,15 +15,21 @@ ACTION_TO_NAME = {v:k for k,v  in NAME_TO_ACTION.items() }
 Index = tuple[int,int]
 class Puzzle:
     """
-        Class representing the information of a state of a 8-Puzzle
+        Class representing the information of a state of a N-Puzzle
     """
-    def __init__(self,matrix):
+    def __init__(self,matrix, generate_goal_matrix = False):
         self.matrix = matrix
         self.N = len(matrix)
 
         #Set up goal state, as a matrix and string
-        self.goal_matrix = self.generate_goal()
-        self.string_goal = self.matrix_to_string(self.goal_matrix)
+        #Don't compute at initialization by default
+        if generate_goal_matrix:
+            self.goal_matrix = self.generate_goal()
+            self.string_goal = self.matrix_to_string(self.goal_matrix)
+        else:
+            self.goal_matrix = None #self.generate_goal()
+            self.string_goal =None # self.matrix_to_string(self.goal_matrix)
+        
         #print("Goal Matrix: ", self.goal_matrix, sep  ="\n")
         #print("Goal String: ", self.string_goal)
 
@@ -33,12 +41,15 @@ class Puzzle:
         self.string_state =self.get_state()
         self.parents_action =None
         self.g = 0
-        self.h =self.heuristic()
+        #Don't compute at initialization
+        #self.h =self.heuristic()
         self.parent = None
 
         i,j = self.zero[0],self.zero[1]
         value = self.matrix[i][j]
         assert  value == 0, "Matrix must have an 0 in position ({},{}) \n Found: {}".format(i,j,value)
+    def get_h(self):
+        return self.heuristic()
 
     def generate_goal(self):
         """
@@ -69,17 +80,26 @@ class Puzzle:
     def heuristic(self):
         """
         Manhatan distance heuristic.
+        the idea is to compute the index of the value in matrix
+        using the next procedure
+        k,l = value//N, value%N
+        example N= 10
+            value = 11, k,l = 1,1
+            value 12, k,l = 1,2
+        example N =  3
+            value = 4 k,l = 1,1
+            value = 7, k,l = 2,1
         """
-        goal ={0:(0,0),1:(0,1),2:(0,2),
-               3:(1,0),4:(1,1),5:(1,2),
-               6:(2,0),7:(2,1),8:(2,2)}
-        cost = 0
+
+        cost = 0 
         #Tile 0 is not considere for the heuristic
-        for i in range(3):
-            for j in range(3):
+        for i in range(self.N):
+            for j in range(self.N):
                 value =self.matrix[i][j]
                 if value != 0:
-                    (k,l) =goal[value]
+                    (k,l) = value//self.N, value%self.N  
+                    #add distance between correct (k,l)
+                    #and current postion (i,j)
                     cost += abs(i-k) +abs(j-l)
 
         return cost
@@ -164,7 +184,7 @@ class Puzzle:
 
     def clone_matrix(self):
         p=[]
-        for i in range(3):
+        for i in range(self.N):
             row = self.matrix[i][:]
             p.append(row)
         return p
@@ -237,13 +257,18 @@ class Puzzle:
             if (position[0] >= 0 and position[0] <=n 
                 and  position[1]>=0  and position[1] <=n) :
                 #Tile to move
+                #print("POSITION: ", position)
                 value = self.matrix[position[0]][position[1]] 
                 #Create new matrix
                 new_matrix =self.clone_matrix()
                 #swap positions bewtween zero (empty tile) and adjacent tile
                 new_matrix[position[0]][position[1]] = 0 
                 new_matrix[zero[0]][zero[1]]= value
-                new_puzzle = Puzzle(new_matrix)
+                new_puzzle = Puzzle(new_matrix, generate_goal_matrix = False)
+                #copy from parent goal matrix 
+                new_puzzle.goal_matrix = self.goal_matrix
+                new_puzzle.string_goal= self.string_goal
+
                 new_puzzle.parents_action = action
                 new_puzzle.parent= self
                 new_puzzle.zero = position
@@ -430,11 +455,57 @@ def test_is_solvable():
     print("Is solvable:" , puzzle_.is_solvable())
     print()
 
+def generate_random_matrix(n:int = 3):
+    numbers = [x for x in range(n*n)]
+    random.shuffle(numbers)
+    matrix = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            index = n*i+j
+            row.append(numbers[index])
+        matrix.append(row)
+            
+    return matrix 
+
+def test_generate_random_matrix():
+    for i in range(11):
+        m = generate_random_matrix(n= i)
+        print("n = ", i )
+        print("matrix:",*m,sep ="\n" )
+        print()
+
+
+def get_solvable_10():
+    matrices = []
+
+    for i in range(20):
+        m = generate_random_matrix(n= 10)
+        #print("MATRIX", m)
+        puzzle = Puzzle(m)
+        solvable = puzzle.is_solvable()
+        if solvable:
+            matrices.append(m)
+    return matrices 
 
 if __name__ == "__main__":
     test_neighbors()
     test_step()
     test_is_goal()
     test_steps()
+    
     test_is_solvable()
+    test_generate_random_matrix()
+
+    solvable_10 = get_solvable_10()
+
+    print("Solvable 10")
+
+    print(*solvable_10, sep='\n')
+
+
+
+    
+
+
     
