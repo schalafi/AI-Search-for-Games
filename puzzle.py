@@ -176,10 +176,11 @@ class Puzzle:
         return  self.string_state == self.string_goal
 
     def get_state(self):
-        state = ""
-        for i in range(len(self.matrix)):
+        """for i in range(len(self.matrix)):
             for j in range(len(self.matrix)):
                 state += str(self.matrix[i][j])
+        """
+        state = self.matrix_to_string(self.matrix)
         return state
 
     def clone_matrix(self):
@@ -276,9 +277,10 @@ class Puzzle:
         return puzzles
     def __str__(self):
         res = ''
-        for row in range(3):
+        for row in range(self.N):
             res += ' '.join(map(str, self.matrix[row]))
             res += '\r\n'
+        res = res[:-2]
         return res
 
     def get_index_of_value(self,value: float)->Index:
@@ -488,6 +490,99 @@ def get_solvable_10():
             matrices.append(m)
     return matrices 
 
+def tuple_to_matrix(matrix_tuple, n = None):
+    """
+    transform tuple to matrix
+    ex:
+    input: (0,1,2,3,4,5,6,7,8)
+    output:
+    [[0,1,2],
+     [3,4,5],
+     [6,7,8]]
+    """
+    if n is None:
+        n = len(matrix_tuple)**(1/2)
+    
+    matrix = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            row.append(matrix_tuple[n*i+j])
+        matrix.append(row)
+    return matrix
+import math 
+def get_easy(n, heuristic_thresold,number_matrices ):
+    """
+    n:
+    heuristic_thresold:
+    number_matrices: 
+
+    Return a list of easy games nxn
+    meaning games with low heuristic value
+    <= 100
+
+    """
+    matrices = []
+    perms = Permutations(n*n)
+    perms_iter = iter(perms)
+    n_permutations = math.factorial(n*n)
+    counter = 0 
+    while (len(matrices) <= number_matrices 
+        and counter < n_permutations):
+        
+        t_matrix = next(perms_iter)
+        m = tuple_to_matrix(t_matrix, n)
+        puzzle = Puzzle(m)
+        solvable = puzzle.is_solvable()
+        h = puzzle.heuristic()
+        counter+= 1
+        print("Heuristic: ", h)
+        if solvable and h <= heuristic_thresold:
+            matrices.append(m)
+    return matrices 
+
+import itertools
+
+class Permutations:
+    def __init__(self, n):
+        self.numbers = range(0, n)
+
+    def __iter__(self):
+        return itertools.permutations(self.numbers)
+
+    def __reverse__(self):
+        return itertools.permutations(reversed(self.numbers))
+
+
+def test_permutations():
+    p = Permutations(10)
+    p_iter = iter(p)
+    for i in range(10):
+        print(next(p_iter))
+
+def test_get_neighbors():
+    matrix = [[2,3],
+                  [1,0]] 
+    p = Puzzle(matrix)
+
+    print(p )
+    print("state id: ", p.get_state())
+
+    for n in p.get_neighbors():
+        print("Neighbor")
+        print(n)
+        print("state id: ", n.get_state())
+    matrix = [[0]
+                 ] 
+    p = Puzzle(matrix)
+
+    print(p )
+    print("state id: ", p.get_state())
+
+    for n in p.get_neighbors():
+        print("Neighbor")
+        print(n)
+        print("state id: ", n.get_state())
 if __name__ == "__main__":
     test_neighbors()
     test_step()
@@ -503,9 +598,16 @@ if __name__ == "__main__":
 
     print(*solvable_10, sep='\n')
 
+    print("Easy Games 5x5:")
+    m_easy = get_easy(n = 5, heuristic_thresold=300, number_matrices= 20)
+    print(*m_easy,sep='\n')
 
+    #test_permutations()
+    print("Test get neighbors:")
+    test_get_neighbors()
 
-    
-
+    print("All 2x2:")
+    m_easy = get_easy(n = 2, heuristic_thresold=300, number_matrices= 4*3*2 )
+    print(*m_easy,sep='\n')
 
     

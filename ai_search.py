@@ -262,8 +262,29 @@ class Search:
             "max_search_depth":  self.height,
             'time':0,
             'n_actions':0 }
-       
     def compute_height(self)-> int:
+        """
+        Compute tree's heigth 
+        
+        """
+        return self.compute_height_node(self.root)
+
+    def compute_height_node(self, root)-> int:
+        """
+        Compute tree's heigth 
+        
+        """
+        #The empty tree
+        if root is None:
+            return 0 
+        next_h = []
+        for node in root.children:
+            next_h.append(self.compute_height_node(node))
+        if len(next_h) ==0 :
+            return 1
+        return max(next_h) + 1
+
+    def compute_height2(self)-> int:
         """
         Compute tree's heigth 
         #TODO use list instead of Queue
